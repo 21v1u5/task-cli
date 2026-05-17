@@ -7,6 +7,14 @@ import (
 	"github.com/21v1u5/task-cli/internal/task"
 )
 
+type Store interface {
+	Create(t *task.Task) error
+	List() ([]task.Task, error)
+	GetByID(id int64) (*task.Task, error)
+	Complete(id int64) error
+	Delete(id int64) error
+}
+
 type SQLiteStore struct {
 	db *sql.DB
 }
@@ -73,4 +81,47 @@ func (s *SQLiteStore) List() ([]task.Task, error){
 		tasks = append(tasks, t)
 	}
 	return tasks, rows.Err()
+}
+
+func (s *SQLiteStore) GetByID(id int64) (*task.Task, err) {
+	var t task.Task
+	err := s.db.QueryRow(
+		`SELECT id, title, description, status, created_at, updated_at
+		FROM tasks Where id = ?`, id,
+	).Scan(&t.ID, &t.Title, &t.Description,
+		   &t.Status, &t.CreatedAt, &t.UpdatedAt)
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("task %d not found", id)
+	}
+	return &t, err
+}
+
+func (s *SQLiteStore) Complete(id int64) error {
+	result, err := s.db.Exec(
+		`UPDATE tasks SET status = ?, updated_at = ?
+		WHERE id = ? AND status = 'pending'`,
+		task.StatusDone, time.Now(), id,
+	)
+	if err != nil {
+		return err
+	}
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return fmt.Errorf("task %d not found or already done", id)
+	}
+	return nil
+}
+
+func (s *SQLiteStore) Delete(id int64) error {
+	result, err := s.db.Exec(
+		"DELETE FROM tasks WHERE id = ?", id,
+	)
+	if err != nil {
+		return err
+	}
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return fmt.Errorf("task %d not found", id)
+	}
+	return nil
 }
