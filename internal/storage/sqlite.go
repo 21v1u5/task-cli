@@ -1,8 +1,9 @@
-import storage
+package storage
 
 import (
 	"database/sql"
 	"time"
+	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/21v1u5/task-cli/internal/task"
 )
@@ -83,7 +84,7 @@ func (s *SQLiteStore) List() ([]task.Task, error){
 	return tasks, rows.Err()
 }
 
-func (s *SQLiteStore) GetByID(id int64) (*task.Task, err) {
+func (s *SQLiteStore) GetByID(id int64) (*task.Task, error) {
 	var t task.Task
 	err := s.db.QueryRow(
 		`SELECT id, title, description, status, created_at, updated_at
