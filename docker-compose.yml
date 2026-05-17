@@ -1,0 +1,8 @@
+services:
+  cli:
+    build: .
+    volumes:
+      - ./data:/app/data
+    environment:
+      - DB_PATH=/app/data/tasks.db
+    command: list
